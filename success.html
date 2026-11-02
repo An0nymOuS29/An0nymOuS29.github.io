@@ -160,7 +160,14 @@
     }
     document.addEventListener("click", () => { ensureCtx(); startAudio(); }, { once: true });
     document.addEventListener("touchstart", () => { ensureCtx(); startAudio(); }, { once: true });
-    window.addEventListener("load", startAudio);
+
+    // Auto-start if redirected from the feedback form (user clicked Submit)
+    if (sessionStorage.getItem("allow_audio") === "true") {
+      sessionStorage.removeItem("allow_audio");
+      window.addEventListener("load", startAudio);
+    } else {
+      window.addEventListener("load", startAudio);
+    }
   </script>
 </body>
 </html>

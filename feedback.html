@@ -157,6 +157,9 @@
       btn.disabled = true;
       btn.textContent = "Submitting...";
 
+      // Store flag so success page knows user interacted (allows autoplay)
+      sessionStorage.setItem("allow_audio", "true");
+
       // Success — redirect
       setTimeout(() => { window.location.href = NEXT_URL; }, 400);
     });
