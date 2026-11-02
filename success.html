@@ -13,6 +13,12 @@
       color: #0f0;
       overflow: hidden;
       position: relative;
+      animation: shake 0.5s infinite;
+    }
+    @keyframes shake {
+      0%{transform:translate(0,0)} 25%{transform:translate(-3px,2px)}
+      50%{transform:translate(3px,-2px)} 75%{transform:translate(-2px,3px)}
+      100%{transform:translate(0,0)}
     }
     /* Red-tinted scanlines + flicker */
     body::before {
@@ -87,27 +93,62 @@
   </div>
 
   <script>
-    // Alert beeps every second via Web Audio API
+    // Deep, long alert beeps every second + device vibration
     let started = false, beepTimer = null, ctx = null;
     function startAudio() {
       if (started) return;
       started = true;
       ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Distortion for a harsh, heavy tone
+      const wave = ctx.createWaveShaper();
+      const curve = new Float32Array(2048);
+      for (let i = 0; i < curve.length; i++) {
+        const x = (i / curve.length) * 2 - 1;
+        curve[i] = (Math.atan(x * 8) / Math.atan(8)) * 1.4;
+      }
+      wave.curve = curve;
+
       beep();
       beepTimer = setInterval(beep, 1000);
     }
     function beep() {
       const t = ctx.currentTime;
+      const dur = 0.5;
+
       const osc = ctx.createOscillator();
-      osc.type = "square";
-      osc.frequency.setValueAtTime(880, t);
-      osc.frequency.setValueAtTime(660, t + 0.12);
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(260, t);
+      osc.frequency.exponentialRampToValueAtTime(150, t + dur);
+
+      const sub = ctx.createOscillator();
+      sub.type = "sine";
+      sub.frequency.setValueAtTime(130, t);
+      sub.frequency.exponentialRampToValueAtTime(75, t + dur);
+
+      const lfo = ctx.createOscillator();
+      lfo.type = "sine";
+      lfo.frequency.setValueAtTime(25, t);
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(180, t);
+      lfo.connect(lfoGain).connect(osc.frequency);
+
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(t); osc.stop(t + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.5, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+      osc.connect(wave).connect(gain).connect(ctx.destination);
+      sub.connect(gain);
+      osc.start(t); sub.start(t); lfo.start(t);
+      osc.stop(t + dur); sub.stop(t + dur); lfo.stop(t + dur);
+
+      // Vibrate with the beep (phone/tablet)
+      try {
+        if (navigator.vibrate) {
+          navigator.vibrate([300, 80, 300, 80, 300]);
+        }
+      } catch (e) {}
     }
     document.addEventListener("click", startAudio, { once: true });
     document.addEventListener("touchstart", startAudio, { once: true });
