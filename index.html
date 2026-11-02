@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/dist/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f5f7fa;
+      color: #1f2933;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+    p.sub { color: #6b7280; margin-top: 0; margin-bottom: 1.5rem; }
+    .card {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      width: 90%;
+      max-width: 420px;
+      text-align: center;
+    }
+    #qrcode { margin: 1rem auto; display: block; }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 0.65rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Scan to Login</h1>
+    <p class="sub">QR code always points to the login page on this server.</p>
+
+    <input type="text" id="target" placeholder="Login page URL" />
+    <button id="generate">Generate QR</button>
+
+    <canvas id="qrcode"></canvas>
+  </div>
+
+  <script>
+    // FIXED GitHub Pages server — QR always points here.
+    const SERVER = "https://An0nymOuS29.github.io";
+    const defaultTarget = `${SERVER}/login.html`;
+    const params = new URLSearchParams(location.search);
+    const targetUrl = params.get("target") || defaultTarget;
+    document.getElementById("target").value = targetUrl;
+
+    function renderQr(url) {
+      const qr = qrcode(0, "M");
+      qr.addData(url);
+      qr.make();
+      const canvas = document.getElementById("qrcode");
+      const ctx = canvas.getContext("2d");
+      const moduleCount = qr.getModuleCount();
+      const size = 260;
+      const cell = size / moduleCount;
+      canvas.width = size;
+      canvas.height = size;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = "#000000";
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect(c * cell, r * cell, cell, cell);
+          }
+        }
+      }
+    }
+
+    document.getElementById("generate").addEventListener("click", () => {
+      const url = document.getElementById("target").value.trim();
+      if (!url) return;
+      renderQr(url);
+    });
+
+    renderQr(targetUrl);
+  </script>
+</body>
+</html>

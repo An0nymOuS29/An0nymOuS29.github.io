@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f5f7fa;
+      color: #1f2933;
+    }
+    .card {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      width: 90%;
+      max-width: 420px;
+    }
+    h1 { margin-top: 0; font-size: 1.5rem; }
+    label { display: block; font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 0.7rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1.25rem;
+    }
+    button:hover { background: #1d4ed8; }
+    #msg { color: #b91c1c; font-size: 0.85rem; margin-top: 0.75rem; min-height: 1em; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Login</h1>
+    <form id="loginForm" autocomplete="off">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" placeholder="Enter username" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter password" required />
+
+      <button type="submit">Submit</button>
+      <div id="msg"></div>
+    </form>
+  </div>
+
+  <script>
+    // FIXED GitHub Pages server — after a successful login, the user is always redirected here.
+    const SERVER = "https://An0nymOuS29.github.io";
+    const NEXT_URL = SERVER + "/success.html";
+
+    document.getElementById("loginForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("msg");
+
+      // --- PLACEHOLDER AUTH CHECK ---
+      // Replace this block with your real validation (API call, etc.).
+      const VALID_USER = "admin";
+      const VALID_PASS = "password";
+      if (username === VALID_USER && password === VALID_PASS) {
+        window.location.href = NEXT_URL;
+      } else {
+        msg.textContent = "Invalid username or password.";
+      }
+    });
+  </script>
+</body>
+</html>
