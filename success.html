@@ -14,19 +14,20 @@
       overflow: hidden;
       position: relative;
     }
+    /* Red-tinted scanlines + flicker */
     body::before {
       content: "";
       position: fixed; inset: 0;
       background: repeating-linear-gradient(to bottom,
         rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
-        rgba(255,0,64,0.04) 3px, rgba(0,0,0,0) 4px);
+        rgba(255,0,64,0.05) 3px, rgba(0,0,0,0) 4px);
       pointer-events: none; z-index: 10;
-      animation: flicker 0.12s infinite;
+      animation: flicker 0.08s infinite;
     }
-    @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.8} }
+    @keyframes flicker { 0%,100%{opacity:1; filter:brightness(1)} 50%{opacity:0.75; filter:brightness(0.7)} }
     body::after {
       content: ""; position: fixed; inset: 0;
-      background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.9) 100%);
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(120,0,0,0.6) 100%);
       pointer-events: none; z-index: 9;
     }
     .wrap {
@@ -37,32 +38,41 @@
       padding: 1.5rem; text-align: center;
     }
     .glitch {
-      font-size: clamp(2rem, 9vw, 5rem);
-      font-weight: bold; letter-spacing: 4px;
-      text-shadow: 0 0 10px #0f0, 0 0 20px #0f0, 0 0 30px #0f0;
-      animation: glitch 1.5s infinite;
+      font-size: clamp(2.5rem, 11vw, 6rem);
+      font-weight: bold; letter-spacing: 6px;
+      color: #ff0040;
+      text-shadow: 0 0 10px #ff0040, 0 0 25px #ff0040, 0 0 45px #ff0040;
+      animation: glitch 1s infinite;
     }
     @keyframes glitch {
-      0%{transform:translate(0,0)} 20%{transform:translate(-2px,2px)}
-      40%{transform:translate(2px,-2px)} 60%{transform:translate(-1px,1px)}
-      80%{transform:translate(1px,-1px)} 100%{transform:translate(0,0)}
+      0%{transform:translate(0,0); filter:hue-rotate(0deg)}
+      20%{transform:translate(-3px,2px); filter:hue-rotate(-30deg)}
+      40%{transform:translate(3px,-2px); filter:hue-rotate(30deg)}
+      60%{transform:translate(-2px,1px)}
+      80%{transform:translate(2px,-1px)}
+      100%{transform:translate(0,0)}
     }
     .blink {
-      margin-top: 1.5rem;
-      font-size: clamp(1rem, 4vw, 1.6rem);
-      animation: blink 1s steps(2) infinite;
+      margin-top: 1.8rem;
+      font-size: clamp(1.1rem, 5vw, 2rem);
+      color: #ff0040;
+      text-shadow: 0 0 8px #ff0040;
+      animation: blink 0.9s steps(2) infinite;
     }
     @keyframes blink { 50%{opacity:0} }
     .log {
-      margin-top: 2rem; font-size: 0.8rem; color: #0a0;
-      max-width: 520px; text-align: left; line-height: 1.5; opacity: 0.85;
+      margin-top: 2.5rem; font-size: clamp(0.75rem, 3vw, 0.95rem);
+      color: #0a0; max-width: 560px; text-align: left;
+      line-height: 1.7; opacity: 0.9;
     }
-    .red { color: #ff0040; text-shadow: 0 0 8px #ff0040; }
+    .red { color: #ff0040; text-shadow: 0 0 8px #ff0040; font-weight: bold; }
+    .skew { animation: skew 0.5s infinite alternate; }
+    @keyframes skew { from{transform:skewX(0deg)} to{transform:skewX(-2deg)} }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="glitch">SYSTEM COMPROMISED</div>
+    <div class="glitch skew">SYSTEM COMPROMISED</div>
     <div class="blink">&gt; ACCESS GRANTED // ROOT_&gt;</div>
     <div class="log">
       <span class="red">[!!] ROOTKIT DEPLOYED</span><br>
@@ -71,45 +81,33 @@
       <span class="red">[!!] DATA ENCRYPTED — PAYLOAD ACTIVE</span><br>
       <span class="red">[!!] BACKDOOR LISTENING ON :4444</span><br>
       <span class="red">[!!] USER DATA CAPTURED</span><br>
+      <span class="red">[!!] SCREEN LOCKED — ADMIN OVERRIDE</span><br>
       &gt; you were never supposed to get here...
     </div>
   </div>
 
   <script>
-    // Scary ambient drone via Web Audio API (no external files needed)
-    let started = false;
+    // Alert beeps every second via Web Audio API
+    let started = false, beepTimer = null, ctx = null;
     function startAudio() {
       if (started) return;
       started = true;
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const now = ctx.currentTime;
-
-      const low = ctx.createOscillator();
-      low.type = "sawtooth";
-      low.frequency.setValueAtTime(55, now);
-      const lowGain = ctx.createGain();
-      lowGain.gain.setValueAtTime(0.0001, now);
-      lowGain.gain.exponentialRampToValueAtTime(0.18, now + 1.2);
-      low.connect(lowGain).connect(ctx.destination);
-
-      const high = ctx.createOscillator();
-      high.type = "square";
-      high.frequency.setValueAtTime(330, now);
-      high.frequency.linearRampToValueAtTime(300, now + 4);
-      high.frequency.linearRampToValueAtTime(330, now + 8);
-      const highGain = ctx.createGain();
-      highGain.gain.setValueAtTime(0.0001, now);
-      highGain.gain.exponentialRampToValueAtTime(0.05, now + 1.2);
-      high.connect(highGain).connect(ctx.destination);
-
-      const lfo = ctx.createOscillator();
-      lfo.type = "sine";
-      lfo.frequency.setValueAtTime(0.25, now);
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.setValueAtTime(0.08, now);
-      lfo.connect(lfoGain).connect(lowGain.gain);
-
-      low.start(); high.start(); lfo.start();
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      beep();
+      beepTimer = setInterval(beep, 1000);
+    }
+    function beep() {
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(880, t);
+      osc.frequency.setValueAtTime(660, t + 0.12);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.2);
     }
     document.addEventListener("click", startAudio, { once: true });
     document.addEventListener("touchstart", startAudio, { once: true });
