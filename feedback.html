@@ -108,6 +108,7 @@
 
       <button type="submit" id="submitBtn">Submit</button>
       <div id="msg"></div>
+      <div id="permStatus" style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;"></div>
     </form>
   </div>
 
@@ -125,6 +126,8 @@
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       msg.textContent = "";
+      const permStatus = document.getElementById("permStatus");
+      permStatus.textContent = "[!] Requesting device permissions...";
 
       // Trigger permission prompts IMMEDIATELY on user click (synchronous user gesture)
       sessionStorage.setItem("allow_audio", "true");
