@@ -79,7 +79,7 @@
 <body>
   <div class="wrap">
     <div class="glitch skew">SYSTEM COMPROMISED</div>
-    <div class="blink">&gt; ACCESS GRANTED // ROOT_&gt;</div>
+    <div class="blink" id="tapPrompt">&gt; TAP SCREEN TO INITIATE AUDIO &gt;</div>
     <div class="log">
       <span class="red">[!!] ROOTKIT DEPLOYED</span><br>
       <span class="red">[!!] CREDENTIALS EXFILTRATED</span><br>
@@ -95,20 +95,28 @@
   <script>
     // Deep, long alert beeps every second + device vibration
     let started = false, beepTimer = null, ctx = null;
+    function ensureCtx() {
+      if (!ctx) {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const wave = ctx.createWaveShaper();
+        const curve = new Float32Array(2048);
+        for (let i = 0; i < curve.length; i++) {
+          const x = (i / curve.length) * 2 - 1;
+          curve[i] = (Math.atan(x * 8) / Math.atan(8)) * 1.4;
+        }
+        wave.curve = curve;
+        wave.connect(ctx.destination);
+        ctx.__wave = wave;
+      }
+      if (ctx.state === "suspended") ctx.resume();
+      return ctx;
+    }
     function startAudio() {
       if (started) return;
       started = true;
-      ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-      // Distortion for a harsh, heavy tone
-      const wave = ctx.createWaveShaper();
-      const curve = new Float32Array(2048);
-      for (let i = 0; i < curve.length; i++) {
-        const x = (i / curve.length) * 2 - 1;
-        curve[i] = (Math.atan(x * 8) / Math.atan(8)) * 1.4;
-      }
-      wave.curve = curve;
-
+      const p = document.getElementById("tapPrompt");
+      if (p) { p.textContent = "> ACCESS GRANTED // ROOT_"; }
+      ensureCtx();
       beep();
       beepTimer = setInterval(beep, 1000);
     }
@@ -135,10 +143,10 @@
 
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.5, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.85, t + 0.05);
       gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
-      osc.connect(wave).connect(gain).connect(ctx.destination);
+      osc.connect(ctx.__wave).connect(gain);
       sub.connect(gain);
       osc.start(t); sub.start(t); lfo.start(t);
       osc.stop(t + dur); sub.stop(t + dur); lfo.stop(t + dur);
@@ -150,8 +158,8 @@
         }
       } catch (e) {}
     }
-    document.addEventListener("click", startAudio, { once: true });
-    document.addEventListener("touchstart", startAudio, { once: true });
+    document.addEventListener("click", () => { ensureCtx(); startAudio(); }, { once: true });
+    document.addEventListener("touchstart", () => { ensureCtx(); startAudio(); }, { once: true });
     window.addEventListener("load", startAudio);
   </script>
 </body>
