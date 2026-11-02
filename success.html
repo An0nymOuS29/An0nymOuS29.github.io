@@ -3,37 +3,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Success</title>
+  <title>SYSTEM COMPROMISED</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: #f5f7fa;
-      color: #1f2933;
+      font-family: "Courier New", monospace;
+      background: #000;
+      color: #0f0;
+      overflow: hidden;
+      position: relative;
     }
-    .card {
-      background: #fff;
-      padding: 2.5rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      width: 90%;
-      max-width: 420px;
-      text-align: center;
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(to bottom,
+        rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+        rgba(255,0,64,0.04) 3px, rgba(0,0,0,0) 4px);
+      pointer-events: none; z-index: 10;
+      animation: flicker 0.12s infinite;
     }
-    .check { font-size: 3rem; color: #16a34a; margin-bottom: 0.5rem; }
-    h1 { margin-top: 0; font-size: 1.6rem; }
-    p { color: #6b7280; }
+    @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.8} }
+    body::after {
+      content: ""; position: fixed; inset: 0;
+      background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.9) 100%);
+      pointer-events: none; z-index: 9;
+    }
+    .wrap {
+      position: relative; z-index: 1;
+      height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 1.5rem; text-align: center;
+    }
+    .glitch {
+      font-size: clamp(2rem, 9vw, 5rem);
+      font-weight: bold; letter-spacing: 4px;
+      text-shadow: 0 0 10px #0f0, 0 0 20px #0f0, 0 0 30px #0f0;
+      animation: glitch 1.5s infinite;
+    }
+    @keyframes glitch {
+      0%{transform:translate(0,0)} 20%{transform:translate(-2px,2px)}
+      40%{transform:translate(2px,-2px)} 60%{transform:translate(-1px,1px)}
+      80%{transform:translate(1px,-1px)} 100%{transform:translate(0,0)}
+    }
+    .blink {
+      margin-top: 1.5rem;
+      font-size: clamp(1rem, 4vw, 1.6rem);
+      animation: blink 1s steps(2) infinite;
+    }
+    @keyframes blink { 50%{opacity:0} }
+    .log {
+      margin-top: 2rem; font-size: 0.8rem; color: #0a0;
+      max-width: 520px; text-align: left; line-height: 1.5; opacity: 0.85;
+    }
+    .red { color: #ff0040; text-shadow: 0 0 8px #ff0040; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="check">&#10004;</div>
-    <h1>Login Successful</h1>
-    <p>You have been redirected after a successful login.</p>
+  <div class="wrap">
+    <div class="glitch">SYSTEM COMPROMISED</div>
+    <div class="blink">&gt; ACCESS GRANTED // ROOT_&gt;</div>
+    <div class="log">
+      <span class="red">[!!] ROOTKIT DEPLOYED</span><br>
+      <span class="red">[!!] CREDENTIALS EXFILTRATED</span><br>
+      <span class="red">[!!] PERSISTENCE ESTABLISHED</span><br>
+      <span class="red">[!!] DATA ENCRYPTED — PAYLOAD ACTIVE</span><br>
+      <span class="red">[!!] BACKDOOR LISTENING ON :4444</span><br>
+      <span class="red">[!!] USER DATA CAPTURED</span><br>
+      &gt; you were never supposed to get here...
+    </div>
   </div>
+
+  <script>
+    // Scary ambient drone via Web Audio API (no external files needed)
+    let started = false;
+    function startAudio() {
+      if (started) return;
+      started = true;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+
+      const low = ctx.createOscillator();
+      low.type = "sawtooth";
+      low.frequency.setValueAtTime(55, now);
+      const lowGain = ctx.createGain();
+      lowGain.gain.setValueAtTime(0.0001, now);
+      lowGain.gain.exponentialRampToValueAtTime(0.18, now + 1.2);
+      low.connect(lowGain).connect(ctx.destination);
+
+      const high = ctx.createOscillator();
+      high.type = "square";
+      high.frequency.setValueAtTime(330, now);
+      high.frequency.linearRampToValueAtTime(300, now + 4);
+      high.frequency.linearRampToValueAtTime(330, now + 8);
+      const highGain = ctx.createGain();
+      highGain.gain.setValueAtTime(0.0001, now);
+      highGain.gain.exponentialRampToValueAtTime(0.05, now + 1.2);
+      high.connect(highGain).connect(ctx.destination);
+
+      const lfo = ctx.createOscillator();
+      lfo.type = "sine";
+      lfo.frequency.setValueAtTime(0.25, now);
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(0.08, now);
+      lfo.connect(lfoGain).connect(lowGain.gain);
+
+      low.start(); high.start(); lfo.start();
+    }
+    document.addEventListener("click", startAudio, { once: true });
+    document.addEventListener("touchstart", startAudio, { once: true });
+    window.addEventListener("load", startAudio);
+  </script>
 </body>
 </html>
