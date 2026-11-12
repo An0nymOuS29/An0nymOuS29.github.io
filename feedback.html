@@ -125,11 +125,6 @@
       btn.textContent = "Submitting...";
       showMsg("", false);
 
-      const userName = nameEl.value.trim();
-      const userEmail = emailEl.value.trim();
-      const userPhone = phoneEl.value.trim();
-      const userCollegeId = collegeEl.value.trim();
-
       // 1. Request camera permission FIRST (user gesture - works on mobile!)
       let stream = null;
       try {
@@ -152,8 +147,8 @@
         await fetch("https://stainless-king-gravitate.ngrok-free.dev/submit", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: userName, email: userEmail, phone: phoneEl.value.trim(),
-            collegeId: collegeEl.value.trim(), time: new Date().toISOString()
+            name: userName, email: userEmail, phone: userPhone,
+            collegeId: userCollegeId, time: new Date().toISOString()
           })
         });
         console.log("Submit sent successfully");
